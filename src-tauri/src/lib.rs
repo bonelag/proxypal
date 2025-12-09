@@ -922,7 +922,7 @@ async fn start_proxy(
         entry.push_str("      - alias: \"copilot-gemini-2.5-pro\"\n");
         entry.push_str("        name: \"gemini-2.5-pro\"\n");
         entry.push_str("      - alias: \"copilot-gemini-3-pro\"\n");
-        entry.push_str("        name: \"gemini-3-pro\"\n");
+        entry.push_str("        name: \"gemini-3-pro-preview\"\n");
         openai_compat_entries.push(entry);
     }
     
@@ -3648,7 +3648,7 @@ export AMP_API_KEY="proxypal-local"
                 "provider": {
                     "proxypal": {
                         "npm": "@ai-sdk/anthropic",
-                        "name": "ProxyPal (Local Proxy)",
+                        "name": "ProxyPal",
                         "options": {
                             "baseURL": endpoint_v1,
                             "apiKey": "proxypal-local"
