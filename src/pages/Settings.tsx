@@ -3322,7 +3322,7 @@ export function SettingsPage() {
 												<div
 													class="h-full bg-brand-500 transition-all duration-300"
 													style={{
-														width: `${updateProgress()?.contentLength ? ((updateProgress()?.chunkLength || 0) / updateProgress()!.contentLength!) * 100 : 0}%`,
+														width: `${updateProgress()?.contentLength ? ((updateProgress()?.chunkLength || 0) / updateProgress().contentLength!) * 100 : 0}%`,
 													}}
 												/>
 											</div>
@@ -3378,7 +3378,7 @@ export function SettingsPage() {
 								ProxyPal
 							</h3>
 							<p class="text-sm text-gray-500 dark:text-gray-400">
-								Version 0.1.51
+								Version 0.1.52
 							</p>
 							<p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
 								Built with love by OpenCodeKit
