@@ -61,6 +61,7 @@ export function CopilotCard(props: CopilotCardProps) {
 			setApiDetection(detection);
 		} catch (err) {
 			console.error("Failed to detect copilot-api:", err);
+			toastStore.error("Copilot detection failed", String(err));
 		}
 
 		// Subscribe to status changes

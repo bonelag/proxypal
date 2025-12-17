@@ -9,7 +9,11 @@
 		"build": "vite build",
 		"serve": "vite preview",
 		"tauri": "tauri",
-		"tauri:build": "tauri build --config src-tauri/tauri.conf.local.json"
+		"tauri:build": "tauri build --config src-tauri/tauri.conf.local.json",
+		"tauri:dev:lowmem": "node scripts/tauri-lowmem.mjs dev",
+		"tauri:build:lowmem": "node scripts/tauri-lowmem.mjs build --config src-tauri/tauri.conf.local.json",
+		"tauri:build:nobundle": "tauri build --no-bundle --config src-tauri/tauri.conf.local.json",
+		"clean:tauri": "node scripts/clean.mjs"
 	},
 	"license": "MIT",
 	"dependencies": {

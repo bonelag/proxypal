@@ -57,6 +57,33 @@ This repo has the Tauri updater public key configured (see `src-tauri/tauri.conf
 pnpm tauri:build
 ```
 
+#### Low-memory build options (Windows-friendly)
+
+If `pnpm tauri build` spikes RAM, use these:
+
+```bash
+pnpm tauri:build:lowmem
+```
+
+This limits Cargo parallelism via `CARGO_BUILD_JOBS` (defaults to `2`). You can override:
+
+```powershell
+$env:CARGO_BUILD_JOBS = "3"
+pnpm tauri:build:lowmem
+```
+
+If you only need the binary (no installer), bundling uses less memory/time:
+
+```bash
+pnpm tauri:build:nobundle
+```
+
+To reclaim disk space and force a true clean rebuild:
+
+```bash
+pnpm clean:tauri
+```
+
 - **Signed build (required for updater artifacts / releases):** set the following environment variables before running `pnpm tauri build`:
 
 ```powershell

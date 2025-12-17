@@ -19,6 +19,144 @@
 					"name": "cliproxyapi",
 					"sidecar": true,
 					"args": true
+				},
+				{
+					"name": "node",
+					"args": true
+				},
+				{
+					"name": "node.exe",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\node.exe",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\node.exe",
+					"args": true
+				},
+				{
+					"name": "npm",
+					"args": true
+				},
+				{
+					"name": "npm.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\npm.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\npm.cmd",
+					"args": true
+				},
+				{
+					"name": "npx",
+					"args": true
+				},
+				{
+					"name": "npx.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\npx.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\npx.cmd",
+					"args": true
+				},
+				{
+					"name": "bunx",
+					"args": true
+				},
+				{
+					"name": "bunx.exe",
+					"args": true
+				},
+				{
+					"name": "copilot-api",
+					"args": true
+				},
+				{
+					"name": "copilot-api.cmd",
+					"args": true
+				}
+			]
+		},
+		{
+			"identifier": "shell:allow-spawn",
+			"allow": [
+				{
+					"name": "cliproxyapi",
+					"sidecar": true,
+					"args": true
+				},
+				{
+					"name": "node",
+					"args": true
+				},
+				{
+					"name": "node.exe",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\node.exe",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\node.exe",
+					"args": true
+				},
+				{
+					"name": "npm",
+					"args": true
+				},
+				{
+					"name": "npm.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\npm.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\npm.cmd",
+					"args": true
+				},
+				{
+					"name": "npx",
+					"args": true
+				},
+				{
+					"name": "npx.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files\\nodejs\\npx.cmd",
+					"args": true
+				},
+				{
+					"name": "C:\\Program Files (x86)\\nodejs\\npx.cmd",
+					"args": true
+				},
+				{
+					"name": "bunx",
+					"args": true
+				},
+				{
+					"name": "bunx.exe",
+					"args": true
+				},
+				{
+					"name": "copilot-api",
+					"args": true
+				},
+				{
+					"name": "copilot-api.cmd",
+					"args": true
 				}
 			]
 		},

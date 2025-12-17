@@ -222,6 +222,7 @@ export function SettingsPage() {
 		try {
 			const result = await detectCopilotApi();
 			setCopilotDetection(result);
+			toastStore.success("Detection complete");
 		} catch (error) {
 			console.error("Copilot detection failed:", error);
 			toastStore.error(`Detection failed: ${error}`);
@@ -2675,6 +2676,7 @@ export function SettingsPage() {
 									size="sm"
 									onClick={runCopilotDetection}
 									disabled={detectingCopilot()}
+									loading={detectingCopilot()}
 								>
 									{detectingCopilot() ? "Detecting..." : "Run Detection"}
 								</Button>

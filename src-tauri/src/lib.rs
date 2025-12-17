@@ -2065,40 +2065,85 @@ async fn detect_copilot_api(app: tauri::AppHandle) -> Result<CopilotApiDetection
     }
     
     // Derive npm/npx paths from node path (handle Windows and Unix paths)
-    let npx_bin = node_bin.as_ref().map(|n| {
-        if cfg!(target_os = "windows") {
-            if n == "node" || n == "node.exe" {
+    // NOTE: Avoid naive string replacement like "\\node" -> "\\npx" because it corrupts
+    // common install paths such as "C:\\Program Files\\nodejs\\node.exe" -> "...\\npxjs\\npx.cmd".
+    let npx_bin = node_bin
+        .as_ref()
+        .map(|n| {
+            if cfg!(target_os = "windows") {
+                let n_trimmed = n.trim();
+                if n_trimmed.eq_ignore_ascii_case("node")
+                    || n_trimmed.eq_ignore_ascii_case("node.exe")
+                {
+                    return "npx.cmd".to_string();
+                }
+
+                let path = std::path::PathBuf::from(n_trimmed);
+                match path.file_name().and_then(|f| f.to_str()) {
+                    Some(file) if file.eq_ignore_ascii_case("node.exe") => path
+                        .parent()
+                        .map(|p| p.join("npx.cmd").to_string_lossy().to_string())
+                        .unwrap_or_else(|| "npx.cmd".to_string()),
+                    _ => "npx.cmd".to_string(),
+                }
+            } else {
+                let n_trimmed = n.trim();
+                if n_trimmed == "node" {
+                    "npx".to_string()
+                } else if n_trimmed.ends_with("/node") {
+                    let node_len = "/node".len();
+                    format!("{}/npx", &n_trimmed[..n_trimmed.len() - node_len])
+                } else {
+                    "npx".to_string()
+                }
+            }
+        })
+        .unwrap_or_else(|| {
+            if cfg!(target_os = "windows") {
                 "npx.cmd".to_string()
             } else {
-                n.replace("\\node.exe", "\\npx.cmd")
-                    .replace("/node.exe", "/npx.cmd")
-                    .replace("\\node", "\\npx")
-                    .replace("/node", "/npx")
-            }
-        } else {
-            let n_trimmed = n.trim();
-            if n_trimmed == "node" {
                 "npx".to_string()
-            } else if n_trimmed.ends_with("/node") {
-                let node_len = "/node".len();
-                format!("{}/npx", &n_trimmed[..n_trimmed.len() - node_len])
+            }
+        });
+
+    let npm_bin = node_bin
+        .as_ref()
+        .map(|n| {
+            if cfg!(target_os = "windows") {
+                let n_trimmed = n.trim();
+                if n_trimmed.eq_ignore_ascii_case("node")
+                    || n_trimmed.eq_ignore_ascii_case("node.exe")
+                {
+                    return "npm.cmd".to_string();
+                }
+
+                let path = std::path::PathBuf::from(n_trimmed);
+                match path.file_name().and_then(|f| f.to_str()) {
+                    Some(file) if file.eq_ignore_ascii_case("node.exe") => path
+                        .parent()
+                        .map(|p| p.join("npm.cmd").to_string_lossy().to_string())
+                        .unwrap_or_else(|| "npm.cmd".to_string()),
+                    _ => "npm.cmd".to_string(),
+                }
             } else {
-                // Fallback: npx should be alongside node
-                "npx".to_string()
+                let n_trimmed = n.trim();
+                if n_trimmed == "node" {
+                    "npm".to_string()
+                } else if n_trimmed.ends_with("/node") {
+                    let node_len = "/node".len();
+                    format!("{}/npm", &n_trimmed[..n_trimmed.len() - node_len])
+                } else {
+                    "npm".to_string()
+                }
             }
-        }
-    }).unwrap_or_else(|| if cfg!(target_os = "windows") { "npx.cmd".to_string() } else { "npx".to_string() });
-    
-    let npm_bin = node_bin.as_ref().map(|n| {
-        if cfg!(target_os = "windows") {
-            n.replace("\\node.exe", "\\npm.cmd")
-                .replace("/node.exe", "/npm.cmd")
-                .replace("\\node", "\\npm")
-                .replace("/node", "/npm")
-        } else {
-            n.replace("/node", "/npm")
-        }
-    }).unwrap_or_else(|| if cfg!(target_os = "windows") { "npm.cmd".to_string() } else { "npm".to_string() });
+        })
+        .unwrap_or_else(|| {
+            if cfg!(target_os = "windows") {
+                "npm.cmd".to_string()
+            } else {
+                "npm".to_string()
+            }
+        });
     
     // Check for bun/bunx (preferred over npx - faster startup)
     let bunx_paths: Vec<String> = if cfg!(target_os = "macos") {
