@@ -11,10 +11,13 @@ interface ProviderCardProps {
   connecting?: boolean;
   description: string;
   onConnect: (provider: Provider) => Promise<void>;
+	paused?: boolean;
+	onTogglePause?: (provider: Provider, paused: boolean) => Promise<void>;
 }
 
 export function ProviderCard(props: ProviderCardProps) {
   const [loading, setLoading] = createSignal(false);
+	const [pausing, setPausing] = createSignal(false);
 
   const handleConnect = async () => {
     setLoading(true);
@@ -30,24 +33,91 @@ export function ProviderCard(props: ProviderCardProps) {
 
   // Check if connected (account count > 0)
   const isConnected = () => props.connected > 0;
+  const isPaused = () => Boolean(props.paused);
+
+  const handleTogglePause = async () => {
+    if (!props.onTogglePause) return;
+    if (!isConnected()) return;
+    setPausing(true);
+    try {
+      await props.onTogglePause(props.provider, !isPaused());
+    } finally {
+      setPausing(false);
+    }
+  };
 
   return (
     <div
-      class={`relative p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:shadow-lg ${
-        isConnected()
-          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-          : "border-gray-200 dark:border-gray-700 hover:border-brand-500"
-      }`}
+		class={`group relative p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:shadow-lg ${
+			isConnected()
+				? isPaused()
+            ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+					: "border-green-500 bg-green-50 dark:bg-green-950/20"
+				: "border-gray-200 dark:border-gray-700 hover:border-brand-500"
+		}`}
     >
       {/* Status indicator */}
       {isConnected() && (
         <div class="absolute top-3 right-3">
           <span class="flex h-3 w-3">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            <span
+              class={`animate-ping absolute inline-flex h-full w-full rounded-full ${isPaused() ? "bg-gray-200 dark:bg-gray-200" : "bg-green-400"} opacity-75`}
+            ></span>
+            <span
+              class={`relative inline-flex rounded-full h-3 w-3 ${isPaused() ? "bg-gray-200 dark:bg-gray-200" : "bg-green-500"}`}
+            ></span>
           </span>
         </div>
       )}
+
+    {/* Pause/Resume (hover) */}
+    {isConnected() && props.onTogglePause && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          void handleTogglePause();
+        }}
+        disabled={pausing()}
+        class={`absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity disabled:opacity-30 ${isPaused() ? "hover:text-green-600 dark:hover:text-green-400" : "hover:text-red-500"}`}
+        title={isPaused() ? "Resume" : "Pause"}
+      >
+        {pausing() ? (
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        ) : isPaused() ? (
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 3l14 9-14 9V3z"
+            />
+          </svg>
+        ) : (
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 9v6m4-6v6"
+            />
+          </svg>
+        )}
+      </button>
+    )}
 
       {/* Icon */}
       <div class="w-12 h-12 mb-3 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden">

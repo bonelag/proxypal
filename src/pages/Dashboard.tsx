@@ -18,6 +18,7 @@ import {
 	configureCliAgent,
 	detectCliAgents,
 	disconnectProvider,
+	getConfig,
 	getAvailableModels,
 	getRequestHistory,
 	getUsageStats,
@@ -25,9 +26,11 @@ import {
 	onRequestLog,
 	openOAuth,
 	type Provider,
+	type ProviderPausedStatus,
 	pollOAuthStatus,
 	type RequestHistory,
 	refreshAuthStatus,
+	setProviderPaused,
 	startProxy,
 	stopProxy,
 	syncUsageFromProxy,
@@ -346,6 +349,9 @@ export function DashboardPage() {
 	} = appStore;
 	const [toggling, setToggling] = createSignal(false);
 	const [connecting, setConnecting] = createSignal<Provider | null>(null);
+	const [pausingProvider, setPausingProvider] = createSignal<Provider | null>(
+		null,
+	);
 	const [recentlyConnected, setRecentlyConnected] = createSignal<Set<Provider>>(
 		new Set(),
 	);
@@ -529,6 +535,8 @@ export function DashboardPage() {
 				await importVertexCredential(selectedPath);
 				const newAuth = await refreshAuthStatus();
 				setAuthStatus(newAuth);
+				// Backend may auto-unpause provider when a new account is added.
+				setConfig(await getConfig());
 				setConnecting(null);
 				setRecentlyConnected((prev) => new Set([...prev, provider]));
 				setTimeout(() => {
@@ -568,6 +576,8 @@ export function DashboardPage() {
 						clearInterval(pollInterval);
 						const newAuth = await refreshAuthStatus();
 						setAuthStatus(newAuth);
+						// Backend may auto-unpause provider when a new account is added.
+						setConfig(await getConfig());
 						setConnecting(null);
 						setRecentlyConnected((prev) => new Set([...prev, provider]));
 						setTimeout(() => {
@@ -603,10 +613,31 @@ export function DashboardPage() {
 			await disconnectProvider(provider);
 			const newAuth = await refreshAuthStatus();
 			setAuthStatus(newAuth);
+			setConfig(await getConfig());
 			toastStore.success(`${provider} disconnected`);
 		} catch (error) {
 			console.error("Failed to disconnect:", error);
 			toastStore.error("Failed to disconnect", String(error));
+		}
+	};
+
+	const isProviderPaused = (provider: Provider) => {
+		const paused = config().providerPaused as ProviderPausedStatus | undefined;
+		return Boolean(paused?.[provider as keyof ProviderPausedStatus]);
+	};
+
+	const handleTogglePause = async (provider: Provider) => {
+		if (pausingProvider()) return;
+		setPausingProvider(provider);
+		try {
+			const nextPaused = !isProviderPaused(provider);
+			const pausedStatus = await setProviderPaused(provider, nextPaused);
+			setConfig({ ...config(), providerPaused: pausedStatus });
+		} catch (error) {
+			console.error("Failed to toggle provider pause:", error);
+			toastStore.error("Failed to update provider", String(error));
+		} finally {
+			setPausingProvider(null);
 		}
 	};
 
@@ -1108,7 +1139,7 @@ export function DashboardPage() {
 									<For each={connectedProviders()}>
 										{(p) => (
 											<div
-												class={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${recentlyConnected().has(p.provider) ? "bg-green-100 dark:bg-green-900/40 border-green-400" : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"} group`}
+												class={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isProviderPaused(p.provider) ? "bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700" : recentlyConnected().has(p.provider) ? "bg-green-100 dark:bg-green-900/40 border-green-400" : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"} group`}
 											>
 												<img
 													src={p.logo}
@@ -1124,37 +1155,50 @@ export function DashboardPage() {
 														{authStatus()[p.provider]}
 													</span>
 												</Show>
-												<HealthIndicator provider={p.provider} />
-												{/* Add another account button */}
-												<button
-													onClick={() => handleConnect(p.provider)}
-													disabled={connecting() !== null}
-													class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-opacity disabled:opacity-30"
-													title="Add another account"
-												>
-													{connecting() === p.provider ? (
-														<svg
-															class="w-3.5 h-3.5 animate-spin"
-															fill="none"
-															viewBox="0 0 24 24"
-														>
-															<circle
-																class="opacity-25"
-																cx="12"
-																cy="12"
-																r="10"
-																stroke="currentColor"
-																stroke-width="4"
-															/>
+													{isProviderPaused(p.provider) ? (
+														<div
+															class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-200 animate-pulse"
+															title="Paused"
+														/>
+													) : (
+														<HealthIndicator provider={p.provider} />
+													)}
+												<div class="hidden group-hover:flex items-center gap-1">
+													{/* Pause / Resume provider */}
+													<button
+														onClick={() => handleTogglePause(p.provider)}
+														disabled={pausingProvider() !== null}
+														class={`text-gray-400 disabled:opacity-30 ${isProviderPaused(p.provider) ? "hover:text-green-600 dark:hover:text-green-400" : "hover:text-red-500"}`}
+														title={isProviderPaused(p.provider) ? "Resume provider" : "Pause provider"}
+													>
+														{pausingProvider() === p.provider ? (
+															<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+																<circle
+																	class="opacity-25"
+																	cx="12"
+																	cy="12"
+																	r="10"
+																	stroke="currentColor"
+																	stroke-width="4"
+																/>
+																<path
+																	class="opacity-75"
+																	fill="currentColor"
+																	d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+																/>
+														</svg>
+													) : isProviderPaused(p.provider) ? (
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 															<path
-																class="opacity-75"
-																fill="currentColor"
-																d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M5 3l14 9-14 9V3z"
 															/>
 														</svg>
 													) : (
 														<svg
-															class="w-3.5 h-3.5"
+															class="w-6 h-6"
 															fill="none"
 															stroke="currentColor"
 															viewBox="0 0 24 24"
@@ -1163,31 +1207,61 @@ export function DashboardPage() {
 																stroke-linecap="round"
 																stroke-linejoin="round"
 																stroke-width="2"
+																d="M10 9v6m4-6v6"
+															/>
+														</svg>
+													)}
+													</button>
+													{/* Add another account button */}
+													<button
+														onClick={() => handleConnect(p.provider)}
+														disabled={connecting() !== null}
+														class="text-gray-400 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-30"
+														title="Add another account"
+													>
+														{connecting() === p.provider ? (
+															<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+																<circle
+																	class="opacity-25"
+																	cx="12"
+																	cy="12"
+																	r="10"
+																	stroke="currentColor"
+																	stroke-width="4"
+																/>
+																<path
+																	class="opacity-75"
+																	fill="currentColor"
+																	d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+																/>
+														</svg>
+													) : (
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
 																d="M12 4v16m8-8H4"
 															/>
 														</svg>
 													)}
-												</button>
-												{/* Disconnect button */}
-												<button
-													onClick={() => handleDisconnect(p.provider)}
-													class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity -mr-1"
-													title="Disconnect all accounts (manage individually in Settings → Auth Files)"
-												>
-													<svg
-														class="w-3.5 h-3.5"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
+													</button>
+													{/* Disconnect button */}
+													<button
+														onClick={() => handleDisconnect(p.provider)}
+														class="text-gray-400 hover:text-red-500"
+														title="Disconnect all accounts (manage individually in Settings → Auth Files)"
 													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M6 18L18 6M6 6l12 12"
-														/>
-													</svg>
-												</button>
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M6 18L18 6M6 6l12 12"
+															/>
+														</svg>
+													</button>
+												</div>
 											</div>
 										)}
 									</For>

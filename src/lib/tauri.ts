@@ -67,6 +67,16 @@ export interface AuthStatus {
 	antigravity: number;
 }
 
+export interface ProviderPausedStatus {
+	claude: boolean;
+	openai: boolean;
+	gemini: boolean;
+	qwen: boolean;
+	iflow: boolean;
+	vertex: boolean;
+	antigravity: boolean;
+}
+
 export async function getAuthStatus(): Promise<AuthStatus> {
 	return invoke("get_auth_status");
 }
@@ -281,6 +291,7 @@ export interface AppConfig {
 	ampRoutingMode: string; // "mappings" or "openai"
 	copilot: CopilotConfig;
 	forceModelMappings: boolean; // Force model mappings to take precedence over local API keys
+	providerPaused: ProviderPausedStatus;
 }
 
 export async function getConfig(): Promise<AppConfig> {
@@ -289,6 +300,18 @@ export async function getConfig(): Promise<AppConfig> {
 
 export async function saveConfig(config: AppConfig): Promise<void> {
 	return invoke("save_config", { config });
+}
+
+// Provider pause (enable/disable) controls
+export async function getProviderPausedStatus(): Promise<ProviderPausedStatus> {
+	return invoke("get_provider_paused_status");
+}
+
+export async function setProviderPaused(
+	provider: Provider,
+	paused: boolean,
+): Promise<ProviderPausedStatus> {
+	return invoke("set_provider_paused", { provider, paused });
 }
 
 // Event listeners

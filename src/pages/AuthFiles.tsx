@@ -7,6 +7,7 @@ import {
 	deleteAllAuthFiles,
 	deleteAuthFile,
 	downloadAuthFile,
+	getConfig,
 	getAuthFiles,
 	refreshAuthStatus,
 	uploadAuthFile,
@@ -109,6 +110,7 @@ export function AuthFilesPage() {
 			loadFiles();
 			const newAuthStatus = await refreshAuthStatus();
 			appStore.setAuthStatus(newAuthStatus);
+			appStore.setConfig(await getConfig());
 		} catch (err) {
 			toastStore.error(`Failed to delete: ${err}`);
 		}
@@ -132,6 +134,7 @@ export function AuthFilesPage() {
 			loadFiles();
 			const newAuthStatus = await refreshAuthStatus();
 			appStore.setAuthStatus(newAuthStatus);
+			appStore.setConfig(await getConfig());
 		} catch (err) {
 			toastStore.error(`Failed to delete all: ${err}`);
 		}

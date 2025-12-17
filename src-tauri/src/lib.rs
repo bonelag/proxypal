@@ -59,6 +59,33 @@ pub struct AuthStatus {
     pub antigravity: u32,
 }
 
+// Provider pause state ("disabled" in UI). When paused, ProxyPal moves the provider's
+// credential files out of CLIProxyAPI's auth directory so the proxy won't use them.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderPausedStatus {
+    pub claude: bool,
+    pub openai: bool,
+    pub gemini: bool,
+    pub qwen: bool,
+    pub iflow: bool,
+    pub vertex: bool,
+    pub antigravity: bool,
+}
+
+impl Default for ProviderPausedStatus {
+    fn default() -> Self {
+        Self {
+            claude: false,
+            openai: false,
+            gemini: false,
+            qwen: false,
+            iflow: false,
+            vertex: false,
+            antigravity: false,
+        }
+    }
+}
+
 impl Default for AuthStatus {
     fn default() -> Self {
         Self {
@@ -131,6 +158,10 @@ pub struct AppConfig {
     // Window behavior: close to tray instead of quitting
     #[serde(default = "default_close_to_tray")]
     pub close_to_tray: bool,
+
+    // Provider pause state (toggle without deleting auth)
+    #[serde(default)]
+    pub provider_paused: ProviderPausedStatus,
 }
 
 fn default_close_to_tray() -> bool {
@@ -269,8 +300,128 @@ impl Default for AppConfig {
             thinking_budget_custom: 16000,
             reasoning_effort_level: "medium".to_string(),
             close_to_tray: true,
+            provider_paused: ProviderPausedStatus::default(),
         }
     }
+}
+
+fn get_cli_proxy_api_auth_dir() -> std::path::PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join(".cli-proxy-api")
+}
+
+fn get_cli_proxy_api_paused_auth_dir() -> std::path::PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join(".cli-proxy-api-paused")
+}
+
+fn provider_file_matches(provider: &str, filename_lower: &str) -> bool {
+    if !filename_lower.ends_with(".json") {
+        return false;
+    }
+    match provider {
+        "claude" => filename_lower.starts_with("claude-") || filename_lower.starts_with("anthropic-"),
+        "openai" => filename_lower.starts_with("codex-"),
+        "gemini" => filename_lower.starts_with("gemini-"),
+        "qwen" => filename_lower.starts_with("qwen-"),
+        "iflow" => filename_lower.starts_with("iflow-"),
+        "vertex" => filename_lower.starts_with("vertex-"),
+        "antigravity" => filename_lower.starts_with("antigravity-"),
+        _ => false,
+    }
+}
+
+fn scan_auth_dir_counts(auth_dir: &std::path::Path) -> AuthStatus {
+    let mut counts = AuthStatus::default();
+    if let Ok(entries) = std::fs::read_dir(auth_dir) {
+        for entry in entries.flatten() {
+            let filename = entry.file_name().to_string_lossy().to_lowercase();
+            if filename.ends_with(".json") {
+                if filename.starts_with("claude-") || filename.starts_with("anthropic-") {
+                    counts.claude += 1;
+                } else if filename.starts_with("codex-") {
+                    counts.openai += 1;
+                } else if filename.starts_with("gemini-") {
+                    counts.gemini += 1;
+                } else if filename.starts_with("qwen-") {
+                    counts.qwen += 1;
+                } else if filename.starts_with("iflow-") {
+                    counts.iflow += 1;
+                } else if filename.starts_with("vertex-") {
+                    counts.vertex += 1;
+                } else if filename.starts_with("antigravity-") {
+                    counts.antigravity += 1;
+                }
+            }
+        }
+    }
+    counts
+}
+
+fn add_auth_counts(mut a: AuthStatus, b: AuthStatus) -> AuthStatus {
+    a.claude += b.claude;
+    a.openai += b.openai;
+    a.gemini += b.gemini;
+    a.qwen += b.qwen;
+    a.iflow += b.iflow;
+    a.vertex += b.vertex;
+    a.antigravity += b.antigravity;
+    a
+}
+
+fn move_matching_auth_files(
+    provider: &str,
+    from_dir: &std::path::Path,
+    to_dir: &std::path::Path,
+) -> Result<(), String> {
+    if !from_dir.exists() {
+        return Ok(());
+    }
+    std::fs::create_dir_all(to_dir).map_err(|e| e.to_string())?;
+
+    let entries = std::fs::read_dir(from_dir).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let filename = entry.file_name().to_string_lossy().to_lowercase();
+        if provider_file_matches(provider, &filename) {
+            let from_path = entry.path();
+            let to_path = to_dir.join(entry.file_name());
+            if let Err(e) = std::fs::rename(&from_path, &to_path) {
+                std::fs::copy(&from_path, &to_path)
+                    .map_err(|copy_e| format!("Failed to move auth file (rename: {}, copy: {}): {:?}", e, copy_e, from_path))?;
+                std::fs::remove_file(&from_path)
+                    .map_err(|rm_e| format!("Failed to remove original auth file after copy: {}: {:?}", rm_e, from_path))?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn apply_provider_pause_state(config: &ProviderPausedStatus) -> Result<(), String> {
+    let enabled_dir = get_cli_proxy_api_auth_dir();
+    let paused_dir = get_cli_proxy_api_paused_auth_dir();
+
+    let providers = [
+        ("claude", config.claude),
+        ("openai", config.openai),
+        ("gemini", config.gemini),
+        ("qwen", config.qwen),
+        ("iflow", config.iflow),
+        ("vertex", config.vertex),
+        ("antigravity", config.antigravity),
+    ];
+
+    for (provider, paused) in providers {
+        if paused {
+            move_matching_auth_files(provider, &enabled_dir, &paused_dir)?;
+        } else {
+            move_matching_auth_files(provider, &paused_dir, &enabled_dir)?;
+        }
+    }
+
+    Ok(())
 }
 
 
@@ -804,6 +955,9 @@ async fn start_proxy(
     state: State<'_, AppState>,
 ) -> Result<ProxyStatus, String> {
     let config = state.config.lock().unwrap().clone();
+
+    // Apply provider pause state before starting the proxy so CLIProxyAPI only loads enabled auth.
+    apply_provider_pause_state(&config.provider_paused)?;
     
     // Check if already running (according to our tracked state)
     {
@@ -1128,7 +1282,7 @@ payload:
 port: {}
 auth-dir: "~/.cli-proxy-api"
 api-keys:
-  - "proxypal-local"
+  - "apikey"
 debug: {}
 usage-statistics-enabled: {}
 logging-to-file: {}
@@ -2620,44 +2774,56 @@ async fn poll_oauth_status(state: State<'_, AppState>, oauth_state: String) -> R
 
 #[tauri::command]
 async fn refresh_auth_status(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<AuthStatus, String> {
-    // Check CLIProxyAPI's auth directory for credentials
-    let auth_dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join(".cli-proxy-api");
+    // Count credentials across BOTH enabled and paused dirs.
+    // Enabled credentials live in ~/.cli-proxy-api (CLIProxyAPI reads these)
+    // Paused credentials are moved to ~/.cli-proxy-api-paused (ProxyPal-managed)
+    let enabled_dir = get_cli_proxy_api_auth_dir();
+    let paused_dir = get_cli_proxy_api_paused_auth_dir();
 
-    let mut new_auth = AuthStatus::default();
+    let enabled_counts = scan_auth_dir_counts(&enabled_dir);
+    let paused_counts = scan_auth_dir_counts(&paused_dir);
+    let new_auth = add_auth_counts(enabled_counts.clone(), paused_counts);
 
-    // Scan auth directory for credential files and count them per provider
-    if let Ok(entries) = std::fs::read_dir(&auth_dir) {
-        for entry in entries.flatten() {
-            let filename = entry.file_name().to_string_lossy().to_lowercase();
-            
-            // CLIProxyAPI naming patterns:
-            // - claude-{email}.json or anthropic-*.json
-            // - codex-{email}.json
-            // - gemini-{email}-{project}.json
-            // - qwen-{email}.json
-            // - iflow-{email}.json
-            // - vertex-{project_id}.json
-            // - antigravity-{email}.json
-            
-            if filename.ends_with(".json") {
-                if filename.starts_with("claude-") || filename.starts_with("anthropic-") {
-                    new_auth.claude += 1;
-                } else if filename.starts_with("codex-") {
-                    new_auth.openai += 1;
-                } else if filename.starts_with("gemini-") {
-                    new_auth.gemini += 1;
-                } else if filename.starts_with("qwen-") {
-                    new_auth.qwen += 1;
-                } else if filename.starts_with("iflow-") {
-                    new_auth.iflow += 1;
-                } else if filename.starts_with("vertex-") {
-                    new_auth.vertex += 1;
-                } else if filename.starts_with("antigravity-") {
-                    new_auth.antigravity += 1;
-                }
-            }
+    // If a provider is marked as paused but new enabled credentials appear (e.g. user adds an
+    // account while paused), auto-unpause it.
+    // This matches UX: adding a new account should make the provider active again.
+    {
+        let mut config = state.config.lock().unwrap();
+        let mut changed = false;
+
+        if config.provider_paused.claude && enabled_counts.claude > 0 {
+            config.provider_paused.claude = false;
+            changed = true;
+        }
+        if config.provider_paused.openai && enabled_counts.openai > 0 {
+            config.provider_paused.openai = false;
+            changed = true;
+        }
+        if config.provider_paused.gemini && enabled_counts.gemini > 0 {
+            config.provider_paused.gemini = false;
+            changed = true;
+        }
+        if config.provider_paused.qwen && enabled_counts.qwen > 0 {
+            config.provider_paused.qwen = false;
+            changed = true;
+        }
+        if config.provider_paused.iflow && enabled_counts.iflow > 0 {
+            config.provider_paused.iflow = false;
+            changed = true;
+        }
+        if config.provider_paused.vertex && enabled_counts.vertex > 0 {
+            config.provider_paused.vertex = false;
+            changed = true;
+        }
+        if config.provider_paused.antigravity && enabled_counts.antigravity > 0 {
+            config.provider_paused.antigravity = false;
+            changed = true;
+        }
+
+        if changed {
+            // Persist config and ensure any previously-paused credential files are restored.
+            save_config_to_file(&config).map_err(|e| format!("Failed to save config: {}", e))?;
+            let _ = apply_provider_pause_state(&config.provider_paused);
         }
     }
 
@@ -2723,31 +2889,17 @@ async fn disconnect_provider(
     state: State<'_, AppState>,
     provider: String,
 ) -> Result<AuthStatus, String> {
-    // Delete credential files from ~/.cli-proxy-api/ for this provider
-    let auth_dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join(".cli-proxy-api");
-    
-    if auth_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(&auth_dir) {
-            for entry in entries.flatten() {
-                let filename = entry.file_name().to_string_lossy().to_lowercase();
-                
-                // Match credential files by provider prefix
-                let should_delete = match provider.as_str() {
-                    "claude" => filename.starts_with("claude-") || filename.starts_with("anthropic-"),
-                    "openai" => filename.starts_with("codex-"),
-                    "gemini" => filename.starts_with("gemini-"),
-                    "qwen" => filename.starts_with("qwen-"),
-                    "iflow" => filename.starts_with("iflow-"),
-                    "vertex" => filename.starts_with("vertex-"),
-                    "antigravity" => filename.starts_with("antigravity-"),
-                    _ => false,
-                };
-                
-                if should_delete && filename.ends_with(".json") {
-                    if let Err(e) = std::fs::remove_file(entry.path()) {
-                        eprintln!("Failed to delete credential file {:?}: {}", entry.path(), e);
+    // Delete credential files from BOTH enabled and paused auth dirs.
+    let auth_dirs = [get_cli_proxy_api_auth_dir(), get_cli_proxy_api_paused_auth_dir()];
+    for auth_dir in auth_dirs {
+        if auth_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(&auth_dir) {
+                for entry in entries.flatten() {
+                    let filename = entry.file_name().to_string_lossy().to_lowercase();
+                    if provider_file_matches(provider.as_str(), &filename) {
+                        if let Err(e) = std::fs::remove_file(entry.path()) {
+                            eprintln!("Failed to delete credential file {:?}: {}", entry.path(), e);
+                        }
                     }
                 }
             }
@@ -2836,6 +2988,51 @@ fn save_config(state: State<AppState>, config: AppConfig) -> Result<(), String> 
     save_config_to_file(&config)
 }
 
+#[tauri::command]
+fn get_provider_paused_status(state: State<AppState>) -> ProviderPausedStatus {
+    state.config.lock().unwrap().provider_paused.clone()
+}
+
+#[tauri::command]
+async fn set_provider_paused(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    provider: String,
+    paused: bool,
+) -> Result<ProviderPausedStatus, String> {
+    // Update config (persisted)
+    {
+        let mut config = state.config.lock().unwrap();
+        match provider.as_str() {
+            "claude" => config.provider_paused.claude = paused,
+            "openai" => config.provider_paused.openai = paused,
+            "gemini" => config.provider_paused.gemini = paused,
+            "qwen" => config.provider_paused.qwen = paused,
+            "iflow" => config.provider_paused.iflow = paused,
+            "vertex" => config.provider_paused.vertex = paused,
+            "antigravity" => config.provider_paused.antigravity = paused,
+            _ => return Err(format!("Unknown provider: {}", provider)),
+        }
+        save_config_to_file(&config)?;
+    }
+
+    // Apply state to filesystem (move auth files)
+    let paused_snapshot = { state.config.lock().unwrap().provider_paused.clone() };
+    apply_provider_pause_state(&paused_snapshot)?;
+
+    // Refresh auth counts (still counts paused creds) and notify UI
+    let _ = refresh_auth_status(app.clone(), state.clone()).await;
+
+    // Restart proxy to ensure CLIProxyAPI reloads auth directory state
+    let proxy_running = { state.proxy_status.lock().unwrap().running };
+    if proxy_running {
+        let _ = stop_proxy(app.clone(), state.clone()).await;
+        let _ = start_proxy(app.clone(), state.clone()).await;
+    }
+
+    Ok(paused_snapshot)
+}
+
 // Provider health status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderHealth {
@@ -2899,7 +3096,7 @@ async fn check_provider_health(state: State<'_, AppState>) -> Result<ProviderHea
     // Check proxy health by requesting models endpoint
     let start = std::time::Instant::now();
     let response = client.get(&endpoint)
-        .header("Authorization", "Bearer proxypal-local")
+        .header("Authorization", "Bearer apikey")
         .send()
         .await;
     let latency = start.elapsed().as_millis() as u64;
@@ -2991,7 +3188,7 @@ async fn test_agent_connection(state: State<'_, AppState>, agent_id: String) -> 
     
     let start = std::time::Instant::now();
     let response = client.get(&endpoint)
-        .header("Authorization", "Bearer proxypal-local")
+        .header("Authorization", "Bearer apikey")
         .send()
         .await;
     let latency = start.elapsed().as_millis() as u64;
@@ -3068,7 +3265,7 @@ async fn get_available_models(state: State<'_, AppState>) -> Result<Vec<Availabl
     let endpoint = format!("http://localhost:{}/v1/models", config.port);
     
     let response = match client.get(&endpoint)
-        .header("Authorization", "Bearer proxypal-local")
+        .header("Authorization", "Bearer apikey")
         .send()
         .await
     {
@@ -3565,38 +3762,48 @@ fn which_exists(cmd: &str) -> bool {
             paths.push(std::path::PathBuf::from(program_files).join("Git\\cmd"));
         }
         
-        // Windows detecting WSL-installed binaries
-        // WSL paths accessible via \\wsl.localhost\<distro>\home\<user> or \\wsl$\<distro>\home\<user>
-        let wsl_distros = ["Ubuntu", "Ubuntu-22.04", "Ubuntu-24.04", "Debian"];
-        let username = home.file_name().unwrap_or_default().to_string_lossy();
-        
-        'wsl_search: for distro in &wsl_distros {
-            // Try both WSL path formats (wsl.localhost is newer, wsl$ is legacy)
-            for prefix in &[r"\\wsl.localhost", r"\\wsl$"] {
-                let wsl_home = std::path::PathBuf::from(
-                    format!(r"{}\{}\home\{}", prefix, distro, username)
-                );
-                if wsl_home.exists() {
-                    // Standard Linux paths in WSL
-                    paths.push(wsl_home.join(".local/bin"));
-                    paths.push(wsl_home.join(".cargo/bin"));
-                    paths.push(wsl_home.join(".bun/bin"));
-                    paths.push(wsl_home.join("go/bin"));
-                    paths.push(wsl_home.join(".opencode/bin"));
-                    
-                    // NVM node versions in WSL
-                    let wsl_nvm = wsl_home.join(".nvm/versions/node");
-                    if wsl_nvm.exists() {
-                        if let Ok(entries) = std::fs::read_dir(&wsl_nvm) {
-                            for entry in entries.flatten() {
-                                let bin_path = entry.path().join("bin");
-                                if bin_path.exists() {
-                                    paths.push(bin_path);
+        // Optional: detect WSL-installed binaries.
+        // NOTE: Accessing \\wsl.localhost / \\wsl$ can trigger Windows to pop up the
+        // "WSL is not installed" prompt. Default is OFF to avoid disruptive popups.
+        // To enable, set PROXYPAL_ENABLE_WSL_SEARCH=1.
+        let enable_wsl_search = std::env::var("PROXYPAL_ENABLE_WSL_SEARCH")
+            .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
+            .unwrap_or(false);
+
+        if enable_wsl_search {
+            // WSL paths accessible via \\wsl.localhost\<distro>\home\<user> or \\wsl$\<distro>\home\<user>
+            let wsl_distros = ["Ubuntu", "Ubuntu-22.04", "Ubuntu-24.04", "Debian"];
+            let username = home.file_name().unwrap_or_default().to_string_lossy();
+
+            'wsl_search: for distro in &wsl_distros {
+                // Try both WSL path formats (wsl.localhost is newer, wsl$ is legacy)
+                for prefix in &[r"\\wsl.localhost", r"\\wsl$"] {
+                    let wsl_home = std::path::PathBuf::from(format!(
+                        r"{}\{}\home\{}",
+                        prefix, distro, username
+                    ));
+                    if wsl_home.exists() {
+                        // Standard Linux paths in WSL
+                        paths.push(wsl_home.join(".local/bin"));
+                        paths.push(wsl_home.join(".cargo/bin"));
+                        paths.push(wsl_home.join(".bun/bin"));
+                        paths.push(wsl_home.join("go/bin"));
+                        paths.push(wsl_home.join(".opencode/bin"));
+
+                        // NVM node versions in WSL
+                        let wsl_nvm = wsl_home.join(".nvm/versions/node");
+                        if wsl_nvm.exists() {
+                            if let Ok(entries) = std::fs::read_dir(&wsl_nvm) {
+                                for entry in entries.flatten() {
+                                    let bin_path = entry.path().join("bin");
+                                    if bin_path.exists() {
+                                        paths.push(bin_path);
+                                    }
                                 }
                             }
                         }
+                        break 'wsl_search; // Found valid distro, stop searching
                     }
-                    break 'wsl_search; // Found valid distro, stop searching
                 }
             }
         }
@@ -3791,7 +3998,7 @@ async fn configure_cli_agent(state: State<'_, AppState>, agent_id: String, model
             // Build env config for Claude Code settings.json
             let env_config = serde_json::json!({
                 "ANTHROPIC_BASE_URL": endpoint,
-                "ANTHROPIC_AUTH_TOKEN": "proxypal-local",
+                "ANTHROPIC_AUTH_TOKEN": "apikey",
                 "ANTHROPIC_DEFAULT_OPUS_MODEL": opus_model,
                 "ANTHROPIC_DEFAULT_SONNET_MODEL": sonnet_model,
                 "ANTHROPIC_DEFAULT_HAIKU_MODEL": haiku_model
@@ -3837,7 +4044,7 @@ Edit your `~/.claude/settings.json` and replace the model values in the `env` se
 ## Current Configuration
 ```json
 "ANTHROPIC_BASE_URL": "{}",
-"ANTHROPIC_AUTH_TOKEN": "proxypal-local",
+"ANTHROPIC_AUTH_TOKEN": "apikey",
 "ANTHROPIC_DEFAULT_OPUS_MODEL": "{}",
 "ANTHROPIC_DEFAULT_SONNET_MODEL": "{}",
 "ANTHROPIC_DEFAULT_HAIKU_MODEL": "{}"
@@ -3957,7 +4164,7 @@ wire_api = "responses"
             
             // Write auth.json
             let auth_content = r#"{
-  "OPENAI_API_KEY": "proxypal-local"
+  "OPENAI_API_KEY": "apikey"
 }"#;
             let auth_path = codex_dir.join("auth.json");
             std::fs::write(&auth_path, auth_content).map_err(|e| e.to_string())?;
@@ -3979,7 +4186,7 @@ export CODE_ASSIST_ENDPOINT="{}"
 
 # Option 2: API Key mode (works with any IP/domain)
 # export GOOGLE_GEMINI_BASE_URL="{}"
-# export GEMINI_API_KEY="proxypal-local"
+# export GEMINI_API_KEY="apikey"
 "#, endpoint, endpoint);
 
             Ok(serde_json::json!({
@@ -4014,7 +4221,7 @@ export CODE_ASSIST_ENDPOINT="{}"
                     "model": m.id,
                     "model_display_name": display_name,
                     "base_url": base_url,
-                    "api_key": "proxypal-local",
+                    "api_key": "apikey",
                     "provider": provider
                 })
             }).collect();
@@ -4028,12 +4235,12 @@ export CODE_ASSIST_ENDPOINT="{}"
                         // Get existing custom_models, filter out proxypal entries, then add new ones
                         let mut merged_models: Vec<serde_json::Value> = Vec::new();
                         
-                        // Keep existing models that are NOT from proxypal (don't have proxypal-local api_key)
+                        // Keep existing models that are NOT from proxypal (don't have apikey api_key)
                         if let Some(existing_models) = existing_json.get("custom_models").and_then(|v| v.as_array()) {
                             for model in existing_models {
                                 let is_proxypal = model.get("api_key")
                                     .and_then(|v| v.as_str())
-                                    .map(|s| s == "proxypal-local")
+                                    .map(|s| s == "apikey")
                                     .unwrap_or(false);
                                 if !is_proxypal {
                                     merged_models.push(model.clone());
@@ -4093,7 +4300,7 @@ export CODE_ASSIST_ENDPOINT="{}"
                 
                 // API key for authentication with the proxy
                 // This matches the api-keys in CLIProxyAPI config
-                "amp.apiKey": "proxypal-local",
+                "amp.apiKey": "apikey",
                 
                 // Enable extended thinking for Claude models
                 "amp.anthropic.thinking.enabled": true,
@@ -4149,7 +4356,7 @@ export CODE_ASSIST_ENDPOINT="{}"
             // Also provide env var option and API key instructions
             let shell_config = format!(r#"# ProxyPal - Amp CLI Configuration (alternative to settings.json)
 export AMP_URL="{}"
-export AMP_API_KEY="proxypal-local"
+export AMP_API_KEY="apikey"
 
 # For Amp cloud features, get your API key from https://ampcode.com/settings
 # and add it to ProxyPal Settings > Amp CLI Integration > Amp API Key
@@ -4160,7 +4367,7 @@ export AMP_API_KEY="proxypal-local"
                 "configType": "both",
                 "configPath": config_path.to_string_lossy(),
                 "shellConfig": shell_config,
-                "instructions": "Amp CLI has been configured. Run 'amp' to start using it. The API key 'proxypal-local' is pre-configured for local proxy access."
+                "instructions": "Amp CLI has been configured. Run 'amp' to start using it. The API key 'apikey' is pre-configured for local proxy access."
             }))
         },
         
@@ -4258,7 +4465,7 @@ export AMP_API_KEY="proxypal-local"
                         "name": "ProxyPal",
                         "options": {
                             "baseURL": endpoint_v1,
-                            "apiKey": "proxypal-local"
+                            "apiKey": "apikey"
                         },
                         "models": models_obj
                     }
@@ -4479,7 +4686,7 @@ models:
   - name: ProxyPal (Auto-routed)
     provider: openai
     model: gpt-4
-    apiKey: proxypal-local
+    apiKey: apikey
     apiBase: {}
     roles:
       - chat
@@ -4493,7 +4700,7 @@ models:
   - name: ProxyPal (Auto-routed)
     provider: openai
     model: gpt-4
-    apiKey: proxypal-local
+    apiKey: apikey
     apiBase: {}
     roles:
       - chat
@@ -5872,7 +6079,7 @@ fn get_tool_setup_info(tool_id: String, state: State<AppState>) -> Result<serde_
   - name: ProxyPal
     provider: openai
     model: gpt-4
-    apiKey: proxypal-local
+    apiKey: apikey
     apiBase: {}"#, endpoint),
             "endpoint": endpoint
         }),
@@ -5896,8 +6103,8 @@ fn get_tool_setup_info(tool_id: String, state: State<AppState>) -> Result<serde_
                 },
                 {
                     "title": "Set API Key",
-                    "description": "Enter: proxypal-local",
-                    "copyable": "proxypal-local".to_string()
+                    "description": "Enter: apikey",
+                    "copyable": "apikey".to_string()
                 },
                 {
                     "title": "Select Model",
@@ -6049,6 +6256,8 @@ pub fn run() {
             poll_oauth_status,
             complete_oauth,
             disconnect_provider,
+            get_provider_paused_status,
+            set_provider_paused,
             import_vertex_credential,
             get_config,
             save_config,

@@ -4,10 +4,13 @@ import { ProviderCard } from "../components/ProviderCard";
 import { Button } from "../components/ui";
 import {
 	importVertexCredential,
+	getConfig,
 	openOAuth,
 	type Provider,
+	type ProviderPausedStatus,
 	pollOAuthStatus,
 	refreshAuthStatus,
+	setProviderPaused,
 	startProxy,
 } from "../lib/tauri";
 import { appStore } from "../stores/app";
@@ -63,11 +66,35 @@ export function WelcomePage() {
 	const {
 		authStatus,
 		setAuthStatus,
+		config,
+		setConfig,
 		proxyStatus,
 		setProxyStatus,
 		setCurrentPage,
 	} = appStore;
 	const [connecting, setConnecting] = createSignal<Provider | null>(null);
+	const [pausingProvider, setPausingProvider] = createSignal<Provider | null>(
+		null,
+	);
+
+	const isProviderPaused = (provider: Provider) => {
+		const paused = config().providerPaused as ProviderPausedStatus | undefined;
+		return Boolean(paused?.[provider as keyof ProviderPausedStatus]);
+	};
+
+	const handleTogglePause = async (provider: Provider, paused: boolean) => {
+		if (pausingProvider()) return;
+		setPausingProvider(provider);
+		try {
+			const pausedStatus = await setProviderPaused(provider, paused);
+			setConfig({ ...config(), providerPaused: pausedStatus });
+		} catch (error) {
+			console.error("Failed to toggle provider pause:", error);
+			toastStore.error("Failed to update provider", String(error));
+		} finally {
+			setPausingProvider(null);
+		}
+	};
 
 	const handleConnect = async (provider: Provider) => {
 		// Auto-start proxy if not running
@@ -124,6 +151,8 @@ export function WelcomePage() {
 				await importVertexCredential(selectedPath);
 				const newAuth = await refreshAuthStatus();
 				setAuthStatus(newAuth);
+				// Backend may auto-unpause provider when a new account is added.
+				setConfig(await getConfig());
 				setConnecting(null);
 				toastStore.success(
 					"Vertex connected!",
@@ -156,6 +185,8 @@ export function WelcomePage() {
 						clearInterval(pollInterval);
 						const newAuth = await refreshAuthStatus();
 						setAuthStatus(newAuth);
+						// Backend may auto-unpause provider when a new account is added.
+						setConfig(await getConfig());
 						setConnecting(null);
 						toastStore.success(
 							`${provider} connected!`,
@@ -244,6 +275,8 @@ export function WelcomePage() {
 								description={provider.description}
 								connected={authStatus()[provider.provider]}
 								connecting={connecting() === provider.provider}
+								paused={isProviderPaused(provider.provider)}
+								onTogglePause={handleTogglePause}
 								onConnect={handleConnect}
 							/>
 						))}

@@ -58,6 +58,15 @@ function createAppStore() {
 		ampOpenaiProviders: [],
 		ampRoutingMode: "mappings",
 		forceModelMappings: false,
+		providerPaused: {
+			claude: false,
+			openai: false,
+			gemini: false,
+			qwen: false,
+			iflow: false,
+			vertex: false,
+			antigravity: false,
+		},
 		copilot: {
 			enabled: false,
 			port: 4141,
@@ -121,6 +130,8 @@ function createAppStore() {
 			try {
 				const authState = await refreshAuthStatus();
 				setAuthStatus(authState);
+				// Backend may auto-unpause providers based on newly added credentials.
+				setConfig(await getConfig());
 
 				// Determine initial page based on auth status
 				const hasAnyAuth =
@@ -167,6 +178,7 @@ function createAppStore() {
 					try {
 						const newAuthStatus = await completeOAuth(data.provider, data.code);
 						setAuthStatus(newAuthStatus);
+						setConfig(await getConfig());
 						// Navigate to dashboard after successful auth
 						setCurrentPage("dashboard");
 					} catch (error) {
