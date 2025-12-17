@@ -47,6 +47,24 @@ pnpm install
 pnpm tauri dev
 ```
 
+### Building locally
+
+This repo has the Tauri updater public key configured (see `src-tauri/tauri.conf.json`). When `createUpdaterArtifacts` is enabled, Tauri requires a signing private key at build time.
+
+- **Unsigned local build (recommended for contributors):**
+
+```bash
+pnpm tauri:build
+```
+
+- **Signed build (required for updater artifacts / releases):** set the following environment variables before running `pnpm tauri build`:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = "<your private key>"
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<your key password>"
+pnpm tauri build
+```
+
 ## Tech Stack
 
 - **Frontend**: SolidJS + TypeScript + Tailwind CSS

@@ -60,6 +60,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Validate Tauri signing secrets
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "Missing GitHub secret: TAURI_SIGNING_PRIVATE_KEY"
+            exit 1
+          fi
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "Missing GitHub secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+            exit 1
+          fi
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
