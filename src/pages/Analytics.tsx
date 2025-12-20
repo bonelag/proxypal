@@ -249,10 +249,10 @@ export function Analytics() {
 	};
 
 	return (
-		<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
-			<div class="max-w-6xl mx-auto space-y-6">
-				{/* Header */}
-				<div class="flex items-center justify-between">
+		<div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+			{/* Header */}
+			<header class="sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+				<div class="max-w-6xl mx-auto flex items-center justify-between">
 					<div class="flex items-center gap-3">
 						<button
 							onClick={() => setCurrentPage("dashboard")}
@@ -305,233 +305,16 @@ export function Analytics() {
 						</button>
 					</div>
 				</div>
+			</header>
 
-				{/* Empty state - no requests yet */}
-				<Show when={!loading() && (!stats() || stats()!.totalRequests === 0)}>
-					<div class="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-						<svg
-							class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="1.5"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-							No Usage Data Yet
-						</h3>
-						<p class="text-gray-500 dark:text-gray-400">
-							Analytics will appear after you make requests through the proxy
-						</p>
-					</div>
-				</Show>
+			<main class="flex-1 p-4 sm:p-6">
+				<div class="max-w-6xl mx-auto space-y-6">
 
-				{/* Loading state */}
-				<Show when={loading()}>
-					<div class="grid grid-cols-4 gap-4">
-						<For each={[1, 2, 3, 4]}>
-							{() => (
-								<div class="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
-							)}
-						</For>
-					</div>
-					<div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
-				</Show>
-
-				{/* Stats content */}
-				<Show when={!loading() && stats() && stats()!.totalRequests > 0}>
-					{/* Overview cards */}
-					<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-						<div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50">
-							<div class="flex items-center gap-2 mb-2">
-								<svg
-									class="w-4 h-4 text-blue-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M13 10V3L4 14h7v7l9-11h-7z"
-									/>
-								</svg>
-								<span class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-									Total Requests
-								</span>
-							</div>
-							<p class="text-2xl font-bold text-blue-700 dark:text-blue-300">
-								{formatNumber(stats()!.totalRequests)}
-							</p>
-							<p class="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">
-								{formatNumber(stats()!.requestsToday)} today
-							</p>
-						</div>
-
-						<div class="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/50">
-							<div class="flex items-center gap-2 mb-2">
-								<svg
-									class="w-4 h-4 text-green-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<span class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
-									Success Rate
-								</span>
-							</div>
-							<p class="text-2xl font-bold text-green-700 dark:text-green-300">
-								{successRate()}%
-							</p>
-							<p class="text-xs text-green-600/70 dark:text-green-400/70 mt-1">
-								{formatNumber(stats()!.successCount)} successful
-							</p>
-						</div>
-
-						<div class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50">
-							<div class="flex items-center gap-2 mb-2">
-								<svg
-									class="w-4 h-4 text-purple-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-									/>
-								</svg>
-								<span class="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-									Total Tokens
-								</span>
-							</div>
-							<p class="text-2xl font-bold text-purple-700 dark:text-purple-300">
-								{formatTokens(stats()!.totalTokens)}
-							</p>
-							<p class="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
-								{formatTokens(stats()!.tokensToday)} today
-							</p>
-						</div>
-
-						<div class="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50">
-							<div class="flex items-center gap-2 mb-2">
-								<svg
-									class="w-4 h-4 text-orange-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-									/>
-								</svg>
-								<span class="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider">
-									Token Flow
-								</span>
-							</div>
-							<div class="flex items-baseline gap-2">
-								<p class="text-lg font-bold text-orange-700 dark:text-orange-300">
-									{formatTokens(stats()!.inputTokens)}
-								</p>
-								<span class="text-xs text-orange-500">in</span>
-							</div>
-							<div class="flex items-baseline gap-2">
-								<p class="text-lg font-bold text-orange-700 dark:text-orange-300">
-									{formatTokens(stats()!.outputTokens)}
-								</p>
-								<span class="text-xs text-orange-500">out</span>
-							</div>
-						</div>
-					</div>
-
-					{/* Charts section */}
-					<Show when={hasChartData()}>
-						<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-							{/* Time range toggle */}
-							<div class="flex items-center justify-between mb-4">
-								<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-									Request Trends
-								</h2>
-								<div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-									<button
-										onClick={() => setTimeRange("hour")}
-										class={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-											timeRange() === "hour"
-												? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
-												: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-										}`}
-									>
-										By Hour
-									</button>
-									<button
-										onClick={() => setTimeRange("day")}
-										class={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-											timeRange() === "day"
-												? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
-												: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-										}`}
-									>
-										By Day
-									</button>
-								</div>
-							</div>
-
-							{/* Requests chart */}
-							<Show when={requestsChartData().data.length > 0}>
-								<div class="h-48 sm:h-64">
-									<LineChart
-										labels={requestsChartData().labels}
-										data={requestsChartData().data}
-										label="Requests"
-										color="rgb(59, 130, 246)"
-										fillColor="rgba(59, 130, 246, 0.1)"
-									/>
-								</div>
-							</Show>
-
-							{/* Tokens chart */}
-							<Show when={tokensChartData().data.length > 0}>
-								<div class="mt-6">
-									<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-										Token Usage
-									</h2>
-									<div class="h-48 sm:h-64">
-										<LineChart
-											labels={tokensChartData().labels}
-											data={tokensChartData().data}
-											label="Tokens"
-											color="rgb(168, 85, 247)"
-											fillColor="rgba(168, 85, 247, 0.1)"
-										/>
-									</div>
-								</div>
-							</Show>
-						</div>
-					</Show>
-
-					{/* No chart data state */}
-					<Show when={!hasChartData()}>
-						<div class="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+					{/* Empty state - no requests yet */}
+					<Show when={!loading() && (!stats() || stats()!.totalRequests === 0)}>
+						<div class="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
 							<svg
-								class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"
+								class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -543,96 +326,316 @@ export function Analytics() {
 									d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
 								/>
 							</svg>
+							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+								No Usage Data Yet
+							</h3>
 							<p class="text-gray-500 dark:text-gray-400">
-								No trend data available yet
-							</p>
-							<p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
-								Charts will appear as you use the proxy
+								Analytics will appear after you make requests through the proxy
 							</p>
 						</div>
 					</Show>
 
-					{/* Model breakdown */}
-					{/* Only show Model Usage when there are known models (filter out "unknown") */}
-					<Show
-						when={
-							stats()!.models.filter(
-								(m) => m.model !== "unknown" && m.model !== "",
-							).length > 0
-						}
-					>
-						<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-							<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-								Model Usage
-							</h2>
-							<div class="overflow-x-auto">
-								<table class="w-full">
-									<thead>
-										<tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-											<th class="pb-3">Model</th>
-											<th class="pb-3 text-right">Requests</th>
-											<th class="pb-3 text-right">Tokens</th>
-											<th class="pb-3 w-32 hidden sm:table-cell">Usage</th>
-										</tr>
-									</thead>
-									<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-										<For
-											each={stats()!
-												.models.filter(
-													(m) => m.model !== "unknown" && m.model !== "",
-												)
-												.slice(0, 10)}
-										>
-											{(model) => (
-												<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-													<td class="py-3">
-														<span
-															class="font-mono text-sm text-gray-900 dark:text-gray-100 truncate block max-w-[200px]"
-															title={model.model}
-														>
-															{model.model}
-														</span>
-													</td>
-													<td class="py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
-														{formatNumber(model.requests)}
-													</td>
-													<td class="py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
-														{formatTokens(model.tokens)}
-													</td>
-													<td class="py-3 hidden sm:table-cell">
-														<MiniBarChart
-															value={model.requests}
-															max={maxModelRequests()}
-															color="bg-gradient-to-r from-brand-400 to-brand-600"
-														/>
-													</td>
-												</tr>
-											)}
-										</For>
-									</tbody>
-								</table>
+					{/* Loading state */}
+					<Show when={loading()}>
+						<div class="grid grid-cols-4 gap-4">
+							<For each={[1, 2, 3, 4]}>
+								{() => (
+									<div class="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+								)}
+							</For>
+						</div>
+						<div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+					</Show>
+
+					{/* Stats content */}
+					<Show when={!loading() && stats() && stats()!.totalRequests > 0}>
+						{/* Overview cards */}
+						<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+							<div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50">
+								<div class="flex items-center gap-2 mb-2">
+									<svg
+										class="w-4 h-4 text-blue-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M13 10V3L4 14h7v7l9-11h-7z"
+										/>
+									</svg>
+									<span class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+										Total Requests
+									</span>
+								</div>
+								<p class="text-2xl font-bold text-blue-700 dark:text-blue-300">
+									{formatNumber(stats()!.totalRequests)}
+								</p>
+								<p class="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">
+									{formatNumber(stats()!.requestsToday)} today
+								</p>
 							</div>
-							<Show
-								when={
-									stats()!.models.filter(
-										(m) => m.model !== "unknown" && m.model !== "",
-									).length > 10
-								}
-							>
-								<p class="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
-									Showing top 10 of{" "}
-									{
+
+							<div class="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/50">
+								<div class="flex items-center gap-2 mb-2">
+									<svg
+										class="w-4 h-4 text-green-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+									<span class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
+										Success Rate
+									</span>
+								</div>
+								<p class="text-2xl font-bold text-green-700 dark:text-green-300">
+									{successRate()}%
+								</p>
+								<p class="text-xs text-green-600/70 dark:text-green-400/70 mt-1">
+									{formatNumber(stats()!.successCount)} successful
+								</p>
+							</div>
+
+							<div class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50">
+								<div class="flex items-center gap-2 mb-2">
+									<svg
+										class="w-4 h-4 text-purple-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+										/>
+									</svg>
+									<span class="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+										Total Tokens
+									</span>
+								</div>
+								<p class="text-2xl font-bold text-purple-700 dark:text-purple-300">
+									{formatTokens(stats()!.totalTokens)}
+								</p>
+								<p class="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
+									{formatTokens(stats()!.tokensToday)} today
+								</p>
+							</div>
+
+							<div class="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50">
+								<div class="flex items-center gap-2 mb-2">
+									<svg
+										class="w-4 h-4 text-orange-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+										/>
+									</svg>
+									<span class="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+										Token Flow
+									</span>
+								</div>
+								<div class="flex items-baseline gap-2">
+									<p class="text-lg font-bold text-orange-700 dark:text-orange-300">
+										{formatTokens(stats()!.inputTokens)}
+									</p>
+									<span class="text-xs text-orange-500">in</span>
+								</div>
+								<div class="flex items-baseline gap-2">
+									<p class="text-lg font-bold text-orange-700 dark:text-orange-300">
+										{formatTokens(stats()!.outputTokens)}
+									</p>
+									<span class="text-xs text-orange-500">out</span>
+								</div>
+							</div>
+						</div>
+
+						{/* Charts section */}
+						<Show when={hasChartData()}>
+							<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+								{/* Time range toggle */}
+								<div class="flex items-center justify-between mb-4">
+									<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+										Request Trends
+									</h2>
+									<div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+										<button
+											onClick={() => setTimeRange("hour")}
+											class={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${timeRange() === "hour"
+												? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+												: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+												}`}
+										>
+											By Hour
+										</button>
+										<button
+											onClick={() => setTimeRange("day")}
+											class={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${timeRange() === "day"
+												? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+												: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+												}`}
+										>
+											By Day
+										</button>
+									</div>
+								</div>
+
+								{/* Requests chart */}
+								<Show when={requestsChartData().data.length > 0}>
+									<div class="h-48 sm:h-64">
+										<LineChart
+											labels={requestsChartData().labels}
+											data={requestsChartData().data}
+											label="Requests"
+											color="rgb(59, 130, 246)"
+											fillColor="rgba(59, 130, 246, 0.1)"
+										/>
+									</div>
+								</Show>
+
+								{/* Tokens chart */}
+								<Show when={tokensChartData().data.length > 0}>
+									<div class="mt-6">
+										<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+											Token Usage
+										</h2>
+										<div class="h-48 sm:h-64">
+											<LineChart
+												labels={tokensChartData().labels}
+												data={tokensChartData().data}
+												label="Tokens"
+												color="rgb(168, 85, 247)"
+												fillColor="rgba(168, 85, 247, 0.1)"
+											/>
+										</div>
+									</div>
+								</Show>
+							</div>
+						</Show>
+
+						{/* No chart data state */}
+						<Show when={!hasChartData()}>
+							<div class="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+								<svg
+									class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="1.5"
+										d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+									/>
+								</svg>
+								<p class="text-gray-500 dark:text-gray-400">
+									No trend data available yet
+								</p>
+								<p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+									Charts will appear as you use the proxy
+								</p>
+							</div>
+						</Show>
+
+						{/* Model breakdown */}
+						{/* Only show Model Usage when there are known models (filter out "unknown") */}
+						<Show
+							when={
+								stats()!.models.filter(
+									(m) => m.model !== "unknown" && m.model !== "",
+								).length > 0
+							}
+						>
+							<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+								<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+									Model Usage
+								</h2>
+								<div class="overflow-x-auto">
+									<table class="w-full">
+										<thead>
+											<tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+												<th class="pb-3">Model</th>
+												<th class="pb-3 text-right">Requests</th>
+												<th class="pb-3 text-right">Tokens</th>
+												<th class="pb-3 w-32 hidden sm:table-cell">Usage</th>
+											</tr>
+										</thead>
+										<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+											<For
+												each={stats()!
+													.models.filter(
+														(m) => m.model !== "unknown" && m.model !== "",
+													)
+													.slice(0, 10)}
+											>
+												{(model) => (
+													<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+														<td class="py-3">
+															<span
+																class="font-mono text-sm text-gray-900 dark:text-gray-100 truncate block max-w-[200px]"
+																title={model.model}
+															>
+																{model.model}
+															</span>
+														</td>
+														<td class="py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
+															{formatNumber(model.requests)}
+														</td>
+														<td class="py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
+															{formatTokens(model.tokens)}
+														</td>
+														<td class="py-3 hidden sm:table-cell">
+															<MiniBarChart
+																value={model.requests}
+																max={maxModelRequests()}
+																color="bg-gradient-to-r from-brand-400 to-brand-600"
+															/>
+														</td>
+													</tr>
+												)}
+											</For>
+										</tbody>
+									</table>
+								</div>
+								<Show
+									when={
 										stats()!.models.filter(
 											(m) => m.model !== "unknown" && m.model !== "",
-										).length
-									}{" "}
-									models
-								</p>
-							</Show>
-						</div>
+										).length > 10
+									}
+								>
+									<p class="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
+										Showing top 10 of{" "}
+										{
+											stats()!.models.filter(
+												(m) => m.model !== "unknown" && m.model !== "",
+											).length
+										}{" "}
+										models
+									</p>
+								</Show>
+							</div>
+						</Show>
 					</Show>
-				</Show>
-			</div>
-		</div>
+				</div>
+			</main>
+		</div >
 	);
 }

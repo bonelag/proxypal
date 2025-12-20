@@ -260,7 +260,7 @@ export function LogViewerPage() {
   return (
     <div class="min-h-screen flex flex-col">
       {/* Header */}
-      <header class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800">
+      <header class="sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2 sm:gap-3">
             <Button
@@ -290,21 +290,19 @@ export function LogViewerPage() {
             <div class="flex items-center gap-1 ml-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
               <button
                 onClick={() => setActiveTab("server")}
-                class={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  activeTab() === "server"
+                class={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab() === "server"
                     ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                }`}
+                  }`}
               >
                 Server
               </button>
               <button
                 onClick={() => setActiveTab("errors")}
-                class={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  activeTab() === "errors"
+                class={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${activeTab() === "errors"
                     ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                }`}
+                  }`}
               >
                 Errors
               </button>
@@ -340,11 +338,10 @@ export function LogViewerPage() {
             {/* Auto-refresh toggle - play/pause icon */}
             <button
               onClick={() => setAutoRefresh(!autoRefresh())}
-              class={`p-2 rounded-lg transition-colors ${
-                autoRefresh()
+              class={`p-2 rounded-lg transition-colors ${autoRefresh()
                   ? "bg-brand-500/20 text-brand-500"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
+                }`}
               title={
                 autoRefresh() ? "Stop auto-refresh" : "Start auto-refresh (30s)"
               }
@@ -469,14 +466,13 @@ export function LogViewerPage() {
                   {(level) => (
                     <button
                       onClick={() => setFilter(level.id)}
-                      class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        filter() === level.id
+                      class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${filter() === level.id
                           ? level.id === "all"
                             ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                             : levelColors[level.id] ||
-                              "bg-gray-200 dark:bg-gray-700"
+                            "bg-gray-200 dark:bg-gray-700"
                           : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
+                        }`}
                     >
                       {level.label}
                       <Show when={logCounts()[level.id] > 0}>
@@ -582,10 +578,9 @@ export function LogViewerPage() {
 
                           {/* Level badge */}
                           <span
-                            class={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 uppercase ${
-                              levelColors[log.level.toUpperCase()] ||
+                            class={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 uppercase ${levelColors[log.level.toUpperCase()] ||
                               "text-gray-500 bg-gray-500/10"
-                            }`}
+                              }`}
                           >
                             {log.level.substring(0, 5)}
                           </span>
@@ -623,11 +618,10 @@ export function LogViewerPage() {
                       {(file) => (
                         <button
                           onClick={() => handleSelectErrorLog(file)}
-                          class={`w-full text-left px-2 py-1.5 rounded text-xs font-mono truncate transition-colors ${
-                            selectedErrorLog() === file
+                          class={`w-full text-left px-2 py-1.5 rounded text-xs font-mono truncate transition-colors ${selectedErrorLog() === file
                               ? "bg-brand-500/20 text-brand-600 dark:text-brand-400"
                               : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          }`}
+                            }`}
                           title={file}
                         >
                           {file}

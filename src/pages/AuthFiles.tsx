@@ -167,7 +167,7 @@ export function AuthFilesPage() {
 	return (
 		<div class="min-h-screen flex flex-col">
 			{/* Header */}
-			<header class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800">
+			<header class="sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2 sm:gap-3">
 						<Button
@@ -281,11 +281,10 @@ export function AuthFilesPage() {
 							<div class="flex items-center gap-2 mb-4 flex-wrap">
 								<button
 									onClick={() => setFilter("all")}
-									class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-										filter() === "all"
+									class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter() === "all"
 											? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
 											: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-									}`}
+										}`}
 								>
 									All ({files().length})
 								</button>
@@ -293,11 +292,10 @@ export function AuthFilesPage() {
 									{(provider) => (
 										<button
 											onClick={() => setFilter(provider)}
-											class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-												filter() === provider
+											class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${filter() === provider
 													? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
 													: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-											}`}
+												}`}
 										>
 											<img
 												src={providerIcons[provider] || "/logos/openai.svg"}
@@ -350,11 +348,10 @@ export function AuthFilesPage() {
 								<For each={filteredFiles()}>
 									{(file) => (
 										<div
-											class={`rounded-xl border p-4 transition-colors ${
-												file.disabled
+											class={`rounded-xl border p-4 transition-colors ${file.disabled
 													? "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700 opacity-60"
 													: "bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
-											}`}
+												}`}
 										>
 											<div class="flex items-start justify-between gap-4">
 												{/* Left: Info */}
@@ -377,10 +374,9 @@ export function AuthFilesPage() {
 																{file.name}
 															</span>
 															<span
-																class={`px-2 py-0.5 rounded text-xs font-medium border ${
-																	providerColors[file.provider.toLowerCase()] ||
+																class={`px-2 py-0.5 rounded text-xs font-medium border ${providerColors[file.provider.toLowerCase()] ||
 																	"bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600"
-																}`}
+																	}`}
 															>
 																{file.provider}
 															</span>

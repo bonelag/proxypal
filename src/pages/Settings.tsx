@@ -854,7 +854,7 @@ export function SettingsPage() {
 	return (
 		<div class="min-h-screen flex flex-col">
 			{/* Header */}
-			<header class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800">
+			<header class="sticky top-0 z-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 				<div class="flex items-center gap-2 sm:gap-3">
 					<Button
 						variant="ghost"
@@ -1330,19 +1330,17 @@ export function SettingsPage() {
 											onClick={() =>
 												handleForceModelMappingsChange(!forceModelMappings())
 											}
-											class={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${
-												forceModelMappings()
+											class={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${forceModelMappings()
 													? "bg-brand-600"
 													: "bg-gray-200 dark:bg-gray-700"
-											}`}
+												}`}
 										>
 											<span
 												aria-hidden="true"
-												class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-													forceModelMappings()
+												class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${forceModelMappings()
 														? "translate-x-5"
 														: "translate-x-0"
-												}`}
+													}`}
 											/>
 										</button>
 									</div>
@@ -1421,11 +1419,10 @@ export function SettingsPage() {
 																			);
 																		}}
 																		disabled={!isEnabled()}
-																		class={`flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-smooth ${
-																			!isEnabled()
+																		class={`flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-smooth ${!isEnabled()
 																				? "opacity-50 cursor-not-allowed"
 																				: ""
-																		}`}
+																			}`}
 																	>
 																		<option value="">Select target...</option>
 																		<Show when={customModels.length > 0}>
@@ -1569,11 +1566,10 @@ export function SettingsPage() {
 																	);
 																}}
 																disabled={mapping.enabled === false}
-																class={`flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-smooth ${
-																	mapping.enabled === false
+																class={`flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-smooth ${mapping.enabled === false
 																		? "opacity-50 cursor-not-allowed"
 																		: ""
-																}`}
+																	}`}
 															>
 																<option value="">Select target...</option>
 																<Show when={customModels.length > 0}>
@@ -2210,11 +2206,10 @@ export function SettingsPage() {
 											<Show when={providerTestResult()}>
 												{(result) => (
 													<div
-														class={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-															result().success
+														class={`flex items-center gap-2 p-2 rounded-lg text-xs ${result().success
 																? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
 																: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-														}`}
+															}`}
 													>
 														<Show
 															when={result().success}
@@ -2386,17 +2381,15 @@ export function SettingsPage() {
 										aria-checked={websocketAuth()}
 										disabled={savingWebsocketAuth()}
 										onClick={() => handleWebsocketAuthChange(!websocketAuth())}
-										class={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${
-											websocketAuth()
+										class={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${websocketAuth()
 												? "bg-brand-600"
 												: "bg-gray-200 dark:bg-gray-700"
-										}`}
+											}`}
 									>
 										<span
 											aria-hidden="true"
-											class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-												websocketAuth() ? "translate-x-5" : "translate-x-0"
-											}`}
+											class={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${websocketAuth() ? "translate-x-5" : "translate-x-0"
+												}`}
 										/>
 									</button>
 								</div>
